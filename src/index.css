@@ -21,7 +21,6 @@
 }
 
 html {
-  scroll-behavior: smooth;
   background-color: #0b101d;
   color: #f4e6c8;
   font-family: var(--font-serif);

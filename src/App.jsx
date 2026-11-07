@@ -2,7 +2,18 @@ import React, { useState, useEffect } from 'react';
 import Stage1HeroBattle from './components/Stage1HeroBattle';
 import Stage2AyodhyaWorld from './components/Stage2AyodhyaWorld';
 import Stage3ReturnEnding from './components/Stage3ReturnEnding';
-import { Sparkles, Sun, Moon, Flame, Compass, X, ArrowRight, Crown } from 'lucide-react';
+import {
+  Sparkles,
+  Sun,
+  Moon,
+  Flame,
+  Compass,
+  X,
+  ArrowRight,
+  Crown,
+  Play,
+  Pause,
+} from 'lucide-react';
 
 export default function App() {
   // 'hero' = Stage 1 Hero Battle
@@ -10,6 +21,7 @@ export default function App() {
   // 'ending' = Stage 3 Return to Ayodhya Video & Golden Diwali Wishes Finale
   const [currentStage, setCurrentStage] = useState('hero');
   const [initialLightingMode, setInitialLightingMode] = useState('auto');
+  const [isFullTourActive, setIsFullTourActive] = useState(false);
 
   // Stage 1 -> Stage 2 Popup state
   const [showCelebrationPopup, setShowCelebrationPopup] = useState(false);
@@ -23,6 +35,9 @@ export default function App() {
 
   useEffect(() => {
     const handleScroll = () => {
+      // Do not pop up manual modals while Full Auto-Play Tour is actively driving transitions
+      if (isFullTourActive) return;
+
       const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
       if (maxScroll <= 0) return;
       const ratio = window.scrollY / maxScroll;
@@ -37,7 +52,6 @@ export default function App() {
         }
       } else if (currentStage === 'world3d') {
         setIsAtRiverGhats(ratio >= 0.84);
-        // Trigger the Ending Section popup when the user reaches the end of S6 (Sarayu Ghats)
         if (ratio >= 0.92 && !endingPopupDismissed) {
           setShowEndingPopup(true);
         } else if (ratio < 0.82) {
@@ -50,24 +64,27 @@ export default function App() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [currentStage, popupDismissed, endingPopupDismissed]);
+  }, [currentStage, popupDismissed, endingPopupDismissed, isFullTourActive]);
 
-  const enterDiwaliCelebrations = (mode = 'auto') => {
+  const enterDiwaliCelebrations = (mode = 'auto', keepTour = false) => {
     setInitialLightingMode(mode);
     setShowCelebrationPopup(false);
     setEndingPopupDismissed(false);
     setShowEndingPopup(false);
+    if (!keepTour) setIsFullTourActive(false);
     window.scrollTo({ top: 0, behavior: 'instant' });
     setCurrentStage('world3d');
   };
 
-  const enterEndingSection = () => {
+  const enterEndingSection = (keepTour = false) => {
     setShowEndingPopup(false);
+    if (!keepTour) setIsFullTourActive(false);
     window.scrollTo({ top: 0, behavior: 'instant' });
     setCurrentStage('ending');
   };
 
   const returnToHero = () => {
+    setIsFullTourActive(false);
     setCurrentStage('hero');
     setPopupDismissed(false);
     setShowCelebrationPopup(false);
@@ -77,6 +94,7 @@ export default function App() {
   };
 
   const returnTo3DWorld = () => {
+    setIsFullTourActive(false);
     setCurrentStage('world3d');
     setEndingPopupDismissed(false);
     setShowEndingPopup(false);
@@ -85,17 +103,67 @@ export default function App() {
     }, 20);
   };
 
+  const toggleFullAutoTour = () => {
+    if (isFullTourActive) {
+      setIsFullTourActive(false);
+      return;
+    }
+    setShowCelebrationPopup(false);
+    setShowEndingPopup(false);
+    // If at the very end of Stage 3, restart from Stage 1 Hero for the full tour
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    if (currentStage === 'ending' && maxScroll > 0 && window.scrollY >= maxScroll - 30) {
+      setCurrentStage('hero');
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        setIsFullTourActive(true);
+      }, 40);
+    } else {
+      setIsFullTourActive(true);
+    }
+  };
+
   return (
     <main className="relative min-h-screen bg-[#090404] text-[#f7efe2]">
+      {/* =====================================================================
+          GLOBAL FULL AUTO-PLAY TOUR BUTTON (TOP CENTER)
+          Plays seamlessly through Stage 1 -> Stage 2 (3D Ayodhya) -> Stage 3 (Finale)
+      ===================================================================== */}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+        <button
+          onClick={toggleFullAutoTour}
+          className={`pointer-events-auto px-4 py-2 rounded-full border backdrop-blur-md text-[11px] font-sans font-extrabold tracking-[0.2em] uppercase flex items-center gap-2 transition-all cursor-pointer shadow-[0_0_24px_rgba(251,191,36,0.45)] ${
+            isFullTourActive
+              ? 'bg-[#fbbf24] text-[#181009] border-[#fffbeb]'
+              : 'bg-[#181009]/85 hover:bg-[#fbbf24] text-[#fde68a] hover:text-[#181009] border-[#fbbf24]/60'
+          }`}
+        >
+          {isFullTourActive ? (
+            <>
+              <Pause className="w-3.5 h-3.5 fill-current" />
+              <span>Pause Full Auto-Tour</span>
+            </>
+          ) : (
+            <>
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>Full Auto-Play Tour</span>
+            </>
+          )}
+        </button>
+      </div>
+
       {/* =====================================================================
           STAGE 1: HERO BATTLE & HAPPY DIWALI REVEAL
       ===================================================================== */}
       {currentStage === 'hero' && (
         <>
-          <Stage1HeroBattle />
+          <Stage1HeroBattle
+            isFullTourActive={isFullTourActive}
+            onStageComplete={() => enterDiwaliCelebrations('auto', true)}
+          />
 
           {/* FLOATING PILL AFTER IMPACT (If user minimized popup or wants quick entry) */}
-          {isPastImpact && !showCelebrationPopup && (
+          {isPastImpact && !showCelebrationPopup && !isFullTourActive && (
             <div className="fixed bottom-20 inset-x-0 z-40 flex justify-center pointer-events-none px-4">
               <button
                 onClick={() => setShowCelebrationPopup(true)}
@@ -171,7 +239,7 @@ export default function App() {
                 </div>
 
                 <button
-                  onClick={() => enterDiwaliCelebrations('auto')}
+                  onClick={() => enterDiwaliCelebrations('auto', false)}
                   className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-[#d97706] via-[#fbbf24] to-[#d97706] hover:from-[#f59e0b] hover:to-[#fbbf24] text-[#181009] font-sans font-extrabold text-sm tracking-[0.2em] uppercase shadow-[0_0_30px_rgba(251,191,36,0.65)] border border-[#fffbeb] flex items-center justify-center gap-3 transition-all cursor-pointer"
                 >
                   <Sparkles className="w-5 h-5 fill-[#181009]" />
@@ -181,14 +249,14 @@ export default function App() {
 
                 <div className="mt-3 flex flex-wrap items-center justify-center gap-2.5">
                   <button
-                    onClick={() => enterDiwaliCelebrations('day')}
+                    onClick={() => enterDiwaliCelebrations('day', false)}
                     className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/15 border border-[#fbbf24]/35 text-xs font-sans font-semibold text-[#fde68a] flex items-center gap-1.5 transition-all cursor-pointer"
                   >
                     <Sun className="w-3.5 h-3.5 text-[#fbbf24]" />
                     <span>Start in Golden Day Mode</span>
                   </button>
                   <button
-                    onClick={() => enterDiwaliCelebrations('night')}
+                    onClick={() => enterDiwaliCelebrations('night', false)}
                     className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/15 border border-[#fbbf24]/35 text-xs font-sans font-semibold text-[#fde68a] flex items-center gap-1.5 transition-all cursor-pointer"
                   >
                     <Moon className="w-3.5 h-3.5 text-[#fde047]" />
@@ -209,11 +277,13 @@ export default function App() {
           <Stage2AyodhyaWorld
             initialMode={initialLightingMode}
             onBackToHero={returnToHero}
-            onEnterEnding={enterEndingSection}
+            onEnterEnding={() => enterEndingSection(false)}
+            isFullTourActive={isFullTourActive}
+            onStageComplete={() => enterEndingSection(true)}
           />
 
           {/* FLOATING PILL AT S6 SARAYU GHATS (If user minimized the ending popup) */}
-          {isAtRiverGhats && !showEndingPopup && (
+          {isAtRiverGhats && !showEndingPopup && !isFullTourActive && (
             <div className="fixed bottom-24 inset-x-0 z-40 flex justify-center pointer-events-none px-4">
               <button
                 onClick={() => setShowEndingPopup(true)}
@@ -266,7 +336,7 @@ export default function App() {
                 </p>
 
                 <button
-                  onClick={enterEndingSection}
+                  onClick={() => enterEndingSection(false)}
                   className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-[#d97706] via-[#fbbf24] to-[#d97706] hover:from-[#f59e0b] hover:to-[#fbbf24] text-[#181009] font-sans font-extrabold text-sm tracking-[0.2em] uppercase shadow-[0_0_30px_rgba(251,191,36,0.65)] border border-[#fffbeb] flex items-center justify-center gap-3 transition-all cursor-pointer"
                 >
                   <Sparkles className="w-5 h-5 fill-[#181009]" />
@@ -296,6 +366,8 @@ export default function App() {
         <Stage3ReturnEnding
           onBackTo3DWorld={returnTo3DWorld}
           onRestartFullEpic={returnToHero}
+          isFullTourActive={isFullTourActive}
+          onStageComplete={() => setIsFullTourActive(false)}
         />
       )}
     </main>

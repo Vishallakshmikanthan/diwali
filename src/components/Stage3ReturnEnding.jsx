@@ -24,6 +24,8 @@ const VIDEO_SCRUB_END = 0.72;
 export default function Stage3ReturnEnding({
   onBackTo3DWorld,
   onRestartFullEpic,
+  isFullTourActive = false,
+  onStageComplete,
 }) {
   const sectionRef = useRef(null);
   const canvasRef = useRef(null);
@@ -306,13 +308,6 @@ export default function Stage3ReturnEnding({
             const p = self.progress;
             targetProgressRef.current = p;
             setScrollPct(Math.round(p * 100));
-
-            if (audioRef.current && soundEnabled && p <= VIDEO_SCRUB_END) {
-              const targetTime = (p / VIDEO_SCRUB_END) * 9.8;
-              if (Math.abs(audioRef.current.currentTime - targetTime) > 0.35) {
-                audioRef.current.currentTime = targetTime;
-              }
-            }
           },
         },
       });
@@ -410,40 +405,77 @@ export default function Stage3ReturnEnding({
     }
   };
 
-  const triggerAutoPlay = () => {
-    if (autoPlayingRef.current) {
-      autoPlayingRef.current = false;
-      setIsAutoPlaying(false);
-      return;
-    }
-
+  const startAutoPlayLoop = (notifyComplete = false) => {
     autoPlayingRef.current = true;
     setIsAutoPlaying(true);
 
-    if (scrollPct >= 96) {
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    let currentY = window.scrollY;
+    if (currentY >= maxScroll - 20) {
+      currentY = 0;
       window.scrollTo({ top: 0, behavior: 'instant' });
     }
 
     if (audioRef.current) {
-      audioRef.current.currentTime = 0;
+      const startRatio = maxScroll > 0 ? currentY / maxScroll : 0;
+      audioRef.current.currentTime =
+        startRatio < VIDEO_SCRUB_END
+          ? (startRatio / VIDEO_SCRUB_END) * 9.8
+          : 0;
       audioRef.current.play().catch(() => {});
       setSoundEnabled(true);
     }
 
-    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-    const step = () => {
+    let lastTime = performance.now();
+    // 0% -> 100% in ~13.6s (so 0% -> 72% matches the 9.8s audio track with zero seeking!)
+    const totalDurationMs = 13600;
+
+    const step = (now) => {
       if (!autoPlayingRef.current) return;
-      const currentY = window.scrollY;
-      if (currentY < maxScroll - 2) {
-        window.scrollTo(0, currentY + Math.max(3.2, maxScroll * 0.0014));
+      const dt = Math.min(50, now - lastTime);
+      lastTime = now;
+
+      const maxS = document.documentElement.scrollHeight - window.innerHeight;
+      currentY += (maxS / totalDurationMs) * dt;
+
+      if (currentY < maxS - 1) {
+        window.scrollTo({ top: currentY, behavior: 'instant' });
         requestAnimationFrame(step);
       } else {
+        window.scrollTo({ top: maxS, behavior: 'instant' });
         autoPlayingRef.current = false;
         setIsAutoPlaying(false);
+        if (notifyComplete && onStageComplete) {
+          onStageComplete();
+        }
       }
     };
     requestAnimationFrame(step);
   };
+
+  const triggerAutoPlay = () => {
+    if (autoPlayingRef.current) {
+      autoPlayingRef.current = false;
+      setIsAutoPlaying(false);
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      return;
+    }
+    startAutoPlayLoop(false);
+  };
+
+  useEffect(() => {
+    if (isFullTourActive && !autoPlayingRef.current) {
+      startAutoPlayLoop(true);
+    } else if (!isFullTourActive && autoPlayingRef.current) {
+      autoPlayingRef.current = false;
+      setIsAutoPlaying(false);
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    }
+  }, [isFullTourActive]);
 
   const replayEndingVideo = () => {
     autoPlayingRef.current = false;
@@ -935,6 +967,34 @@ export default function Stage3ReturnEnding({
                   <span>Restart Full Epic</span>
                 </button>
               )}
+            </div>
+
+            {/* 5B. CREATOR CREDITS SECTION: Diwali wishes by Vishallakshmikanthan */}
+            <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-2.5 px-5 py-2 rounded-2xl bg-black/55 border border-[#fbbf24]/40 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.65)]">
+              <span
+                style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}
+                className="text-sm sm:text-base text-[#fffdf9] tracking-wide"
+              >
+                Diwali wishes by{' '}
+                <strong
+                  style={{ fontFamily: "'Cinzel', serif" }}
+                  className="text-[#fde68a] font-bold tracking-wider"
+                >
+                  Vishallakshmikanthan
+                </strong>
+              </span>
+              <span className="hidden sm:inline text-[#fbbf24]/50">•</span>
+              <a
+                href="https://www.linkedin.com/in/vishallakshmikanthan/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#fbbf24]/15 hover:bg-[#fbbf24] text-[#fde68a] hover:text-[#181009] border border-[#fbbf24]/50 text-[11px] font-sans font-bold tracking-wider uppercase transition-all"
+              >
+                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                  <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
+                </svg>
+                <span>Connect on LinkedIn</span>
+              </a>
             </div>
           </div>
 

@@ -10,7 +10,10 @@ const TOTAL_VIDEO_FRAMES = 221;
 // 0.00 -> 0.66 scrubs the video frames; 0.66 -> 1.00 reveals the `background-ref` sunset & `typography-ref` Movanze Happy Diwali
 const IMPACT_SCROLL_END = 0.66;
 
-export default function Stage1HeroBattle() {
+export default function Stage1HeroBattle({
+  isFullTourActive = false,
+  onStageComplete,
+}) {
   const sectionRef = useRef(null);
   const canvasRef = useRef(null);
   const audioRef = useRef(null);
@@ -250,13 +253,6 @@ export default function Stage1HeroBattle() {
             const p = self.progress;
             targetProgressRef.current = p;
             setScrollPct(Math.round(p * 100));
-
-            if (audioRef.current && soundEnabled && p <= IMPACT_SCROLL_END) {
-              const targetTime = (p / IMPACT_SCROLL_END) * 9.2;
-              if (Math.abs(audioRef.current.currentTime - targetTime) > 0.35) {
-                audioRef.current.currentTime = targetTime;
-              }
-            }
           },
         },
       });
@@ -333,40 +329,79 @@ export default function Stage1HeroBattle() {
     }
   };
 
-  const triggerAutoPlay = () => {
-    if (autoPlayingRef.current) {
-      autoPlayingRef.current = false;
-      setIsAutoPlaying(false);
-      return;
-    }
-
+  const startAutoPlayLoop = (notifyComplete = false) => {
     autoPlayingRef.current = true;
     setIsAutoPlaying(true);
 
-    if (scrollPct >= 96) {
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    let currentY = window.scrollY;
+    if (currentY >= maxScroll - 20) {
+      currentY = 0;
       window.scrollTo({ top: 0, behavior: 'instant' });
     }
 
     if (audioRef.current) {
-      audioRef.current.currentTime = 0;
+      const startRatio = maxScroll > 0 ? currentY / maxScroll : 0;
+      audioRef.current.currentTime =
+        startRatio < IMPACT_SCROLL_END
+          ? (startRatio / IMPACT_SCROLL_END) * 9.2
+          : 0;
       audioRef.current.play().catch(() => {});
       setSoundEnabled(true);
     }
 
-    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-    const step = () => {
+    let lastTime = performance.now();
+    // 0% -> 100% in ~13.9s (so 0% -> 66% matches the 9.2s audio track with zero seeking!)
+    const totalDurationMs = 13900;
+
+    const step = (now) => {
       if (!autoPlayingRef.current) return;
-      const currentY = window.scrollY;
-      if (currentY < maxScroll - 2) {
-        window.scrollTo(0, currentY + Math.max(3.5, maxScroll * 0.00145));
+      const dt = Math.min(50, now - lastTime);
+      lastTime = now;
+
+      const maxS = document.documentElement.scrollHeight - window.innerHeight;
+      currentY += (maxS / totalDurationMs) * dt;
+
+      if (currentY < maxS - 1) {
+        window.scrollTo({ top: currentY, behavior: 'instant' });
         requestAnimationFrame(step);
       } else {
+        window.scrollTo({ top: maxS, behavior: 'instant' });
         autoPlayingRef.current = false;
         setIsAutoPlaying(false);
+        if (notifyComplete && onStageComplete) {
+          setTimeout(() => {
+            onStageComplete();
+          }, 1600);
+        }
       }
     };
     requestAnimationFrame(step);
   };
+
+  const triggerAutoPlay = () => {
+    if (autoPlayingRef.current) {
+      autoPlayingRef.current = false;
+      setIsAutoPlaying(false);
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      return;
+    }
+    startAutoPlayLoop(false);
+  };
+
+  useEffect(() => {
+    if (isFullTourActive && !autoPlayingRef.current) {
+      startAutoPlayLoop(true);
+    } else if (!isFullTourActive && autoPlayingRef.current) {
+      autoPlayingRef.current = false;
+      setIsAutoPlaying(false);
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    }
+  }, [isFullTourActive]);
 
   const resetToTop = () => {
     autoPlayingRef.current = false;

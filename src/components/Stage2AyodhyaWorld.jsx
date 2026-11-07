@@ -815,6 +815,8 @@ export default function Stage2AyodhyaWorld({
   initialMode = 'auto',
   onBackToHero,
   onEnterEnding,
+  isFullTourActive = false,
+  onStageComplete,
 }) {
   const sectionRef = useRef(null);
   const scrollProgressRef = useRef(0);
@@ -882,6 +884,45 @@ export default function Stage2AyodhyaWorld({
     });
   };
 
+  const startAutoTourLoop = (notifyComplete = false) => {
+    autoTourRef.current = true;
+    setIsAutoTouring(true);
+
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    let currentY = window.scrollY;
+    if (currentY >= maxScroll - 20) {
+      currentY = 0;
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+
+    let lastTime = performance.now();
+    const totalDurationMs = 19000; // 19s smooth cinematic flight across S1 -> S6
+
+    const step = (now) => {
+      if (!autoTourRef.current || !sectionRef.current) return;
+      const dt = Math.min(50, now - lastTime);
+      lastTime = now;
+
+      const maxS = sectionRef.current.offsetHeight - window.innerHeight;
+      currentY += (maxS / totalDurationMs) * dt;
+
+      if (currentY < maxS - 2) {
+        window.scrollTo({ top: currentY, behavior: 'instant' });
+        requestAnimationFrame(step);
+      } else {
+        window.scrollTo({ top: maxS, behavior: 'instant' });
+        autoTourRef.current = false;
+        setIsAutoTouring(false);
+        if (notifyComplete && onStageComplete) {
+          setTimeout(() => {
+            onStageComplete();
+          }, 1600);
+        }
+      }
+    };
+    requestAnimationFrame(step);
+  };
+
   // Automated Cinematic Tour through S1 -> S6
   const toggleAutoTour = () => {
     if (autoTourRef.current) {
@@ -889,28 +930,17 @@ export default function Stage2AyodhyaWorld({
       setIsAutoTouring(false);
       return;
     }
-
-    autoTourRef.current = true;
-    setIsAutoTouring(true);
-
-    if (scrollPct >= 97) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
-    }
-
-    const step = () => {
-      if (!autoTourRef.current || !sectionRef.current) return;
-      const maxScroll = sectionRef.current.offsetHeight - window.innerHeight;
-      const currentY = window.scrollY;
-      if (currentY < maxScroll - 2) {
-        window.scrollTo(0, currentY + Math.max(2.6, maxScroll * 0.0011));
-        requestAnimationFrame(step);
-      } else {
-        autoTourRef.current = false;
-        setIsAutoTouring(false);
-      }
-    };
-    requestAnimationFrame(step);
+    startAutoTourLoop(false);
   };
+
+  useEffect(() => {
+    if (isFullTourActive && !autoTourRef.current) {
+      startAutoTourLoop(true);
+    } else if (!isFullTourActive && autoTourRef.current) {
+      autoTourRef.current = false;
+      setIsAutoTouring(false);
+    }
+  }, [isFullTourActive]);
 
   // Interactive 360° Look-Around Pointer Handlers
   const handlePointerDown = (e) => {
