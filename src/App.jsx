@@ -1,52 +1,74 @@
 import React, { useState, useEffect } from 'react';
 import Stage1HeroBattle from './components/Stage1HeroBattle';
 import Stage2AyodhyaWorld from './components/Stage2AyodhyaWorld';
-import { Sparkles, Sun, Moon, Flame, Compass, X, ArrowRight } from 'lucide-react';
+import Stage3ReturnEnding from './components/Stage3ReturnEnding';
+import { Sparkles, Sun, Moon, Flame, Compass, X, ArrowRight, Crown } from 'lucide-react';
 
 export default function App() {
-  // False = Stage 1 Hero Battle (100% isolated so Hero never crashes or lags)
-  // True = Stage 2 Full 3D Ancient Ayodhya World
-  const [in3DWorld, setIn3DWorld] = useState(false);
+  // 'hero' = Stage 1 Hero Battle
+  // 'world3d' = Stage 2 Full 3D Ancient Ayodhya World
+  // 'ending' = Stage 3 Return to Ayodhya Video & Golden Diwali Wishes Finale
+  const [currentStage, setCurrentStage] = useState('hero');
   const [initialLightingMode, setInitialLightingMode] = useState('auto');
 
-  // Popup state triggered after reaching the end of the Hero section
+  // Stage 1 -> Stage 2 Popup state
   const [showCelebrationPopup, setShowCelebrationPopup] = useState(false);
   const [popupDismissed, setPopupDismissed] = useState(false);
   const [isPastImpact, setIsPastImpact] = useState(false);
 
-  useEffect(() => {
-    if (in3DWorld) return;
+  // Stage 2 -> Stage 3 Ending Popup state
+  const [showEndingPopup, setShowEndingPopup] = useState(false);
+  const [endingPopupDismissed, setEndingPopupDismissed] = useState(false);
+  const [isAtRiverGhats, setIsAtRiverGhats] = useState(false);
 
+  useEffect(() => {
     const handleScroll = () => {
       const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
       if (maxScroll <= 0) return;
       const ratio = window.scrollY / maxScroll;
 
-      setIsPastImpact(ratio >= 0.68);
-
-      // Show the "Enter Diwali Celebrations" popup once the user reaches the end of the Hero section
-      if (ratio >= 0.88 && !popupDismissed) {
-        setShowCelebrationPopup(true);
-      } else if (ratio < 0.72) {
-        setShowCelebrationPopup(false);
-        setPopupDismissed(false);
+      if (currentStage === 'hero') {
+        setIsPastImpact(ratio >= 0.68);
+        if (ratio >= 0.88 && !popupDismissed) {
+          setShowCelebrationPopup(true);
+        } else if (ratio < 0.72) {
+          setShowCelebrationPopup(false);
+          setPopupDismissed(false);
+        }
+      } else if (currentStage === 'world3d') {
+        setIsAtRiverGhats(ratio >= 0.84);
+        // Trigger the Ending Section popup when the user reaches the end of S6 (Sarayu Ghats)
+        if (ratio >= 0.92 && !endingPopupDismissed) {
+          setShowEndingPopup(true);
+        } else if (ratio < 0.82) {
+          setShowEndingPopup(false);
+          setEndingPopupDismissed(false);
+        }
       }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [in3DWorld, popupDismissed]);
+  }, [currentStage, popupDismissed, endingPopupDismissed]);
 
   const enterDiwaliCelebrations = (mode = 'auto') => {
     setInitialLightingMode(mode);
     setShowCelebrationPopup(false);
+    setEndingPopupDismissed(false);
+    setShowEndingPopup(false);
     window.scrollTo({ top: 0, behavior: 'instant' });
-    setIn3DWorld(true);
+    setCurrentStage('world3d');
+  };
+
+  const enterEndingSection = () => {
+    setShowEndingPopup(false);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    setCurrentStage('ending');
   };
 
   const returnToHero = () => {
-    setIn3DWorld(false);
+    setCurrentStage('hero');
     setPopupDismissed(false);
     setShowCelebrationPopup(false);
     setTimeout(() => {
@@ -54,11 +76,22 @@ export default function App() {
     }, 20);
   };
 
+  const returnTo3DWorld = () => {
+    setCurrentStage('world3d');
+    setEndingPopupDismissed(false);
+    setShowEndingPopup(false);
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }, 20);
+  };
+
   return (
     <main className="relative min-h-screen bg-[#090404] text-[#f7efe2]">
-      {!in3DWorld ? (
+      {/* =====================================================================
+          STAGE 1: HERO BATTLE & HAPPY DIWALI REVEAL
+      ===================================================================== */}
+      {currentStage === 'hero' && (
         <>
-          {/* STAGE 1: UNTOUCHED HERO BATTLE & HAPPY DIWALI REVEAL */}
           <Stage1HeroBattle />
 
           {/* FLOATING PILL AFTER IMPACT (If user minimized popup or wants quick entry) */}
@@ -75,14 +108,10 @@ export default function App() {
             </div>
           )}
 
-          {/* =====================================================================
-              ROYAL INVITATION POPUP AFTER HERO SECTION:
-              "Enter Diwali Celebrations" -> Launches Full 3D Ancient Ayodhya World
-          ===================================================================== */}
+          {/* POPUP 1: AFTER HERO SECTION -> "Enter Diwali Celebrations" */}
           {showCelebrationPopup && (
             <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
               <div className="relative w-full max-w-xl rounded-3xl bg-gradient-to-b from-[#241308] via-[#160c06] to-[#0d0704] border-2 border-[#fbbf24] p-6 md:p-8 shadow-[0_0_70px_rgba(245,158,11,0.5)] text-center overflow-hidden">
-                {/* Decorative Top Golden Glow */}
                 <div
                   className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-48 pointer-events-none opacity-45"
                   style={{
@@ -91,7 +120,6 @@ export default function App() {
                   }}
                 />
 
-                {/* Minimize / Close Button (lets user admire the Happy Diwali screen) */}
                 <button
                   onClick={() => {
                     setShowCelebrationPopup(false);
@@ -103,7 +131,6 @@ export default function App() {
                   <X className="w-4 h-4" />
                 </button>
 
-                {/* Suryavanshi Crest Badge */}
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#fbbf24]/15 border border-[#fbbf24]/45 text-[#fde68a] text-[11px] font-sans font-bold tracking-[0.24em] uppercase mb-4">
                   <Compass className="w-3.5 h-3.5 text-[#fbbf24]" />
                   <span>Treta Yuga • Kingdom of Ayodhya</span>
@@ -120,7 +147,6 @@ export default function App() {
                   Step through the grand Royal Torana Gate into a breathtaking, fully 3D ancient Ayodhya — alive with thousands of glowing diyas, palaces, Shri Ram Mandir Maha Aarti, royal elephants, chariots, festive markets, and the sacred Sarayu River.
                 </p>
 
-                {/* 6 Section Preview Badges */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-left mb-6">
                   {[
                     { code: 'S1', name: 'Grand Entry & Toran' },
@@ -144,7 +170,6 @@ export default function App() {
                   ))}
                 </div>
 
-                {/* Primary CTA Button */}
                 <button
                   onClick={() => enterDiwaliCelebrations('auto')}
                   className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-[#d97706] via-[#fbbf24] to-[#d97706] hover:from-[#f59e0b] hover:to-[#fbbf24] text-[#181009] font-sans font-extrabold text-sm tracking-[0.2em] uppercase shadow-[0_0_30px_rgba(251,191,36,0.65)] border border-[#fffbeb] flex items-center justify-center gap-3 transition-all cursor-pointer"
@@ -154,7 +179,6 @@ export default function App() {
                   <ArrowRight className="w-5 h-5" />
                 </button>
 
-                {/* Quick Direct Mode Launchers: Day Mode vs Night Mode */}
                 <div className="mt-3 flex flex-wrap items-center justify-center gap-2.5">
                   <button
                     onClick={() => enterDiwaliCelebrations('day')}
@@ -175,11 +199,103 @@ export default function App() {
             </div>
           )}
         </>
-      ) : (
-        /* STAGE 2: BREATHTAKING 3D ANCIENT AYODHYA DIWALI CELEBRATION WORLD */
-        <Stage2AyodhyaWorld
-          initialMode={initialLightingMode}
-          onBackToHero={returnToHero}
+      )}
+
+      {/* =====================================================================
+          STAGE 2: 3D ANCIENT AYODHYA DIWALI CELEBRATION WORLD
+      ===================================================================== */}
+      {currentStage === 'world3d' && (
+        <>
+          <Stage2AyodhyaWorld
+            initialMode={initialLightingMode}
+            onBackToHero={returnToHero}
+            onEnterEnding={enterEndingSection}
+          />
+
+          {/* FLOATING PILL AT S6 SARAYU GHATS (If user minimized the ending popup) */}
+          {isAtRiverGhats && !showEndingPopup && (
+            <div className="fixed bottom-24 inset-x-0 z-40 flex justify-center pointer-events-none px-4">
+              <button
+                onClick={() => setShowEndingPopup(true)}
+                className="pointer-events-auto group px-7 py-3.5 rounded-full bg-gradient-to-r from-[#d97706] via-[#fbbf24] to-[#d97706] text-[#181009] font-sans font-extrabold text-xs tracking-[0.2em] uppercase shadow-[0_0_35px_rgba(251,191,36,0.85)] border-2 border-[#fffbeb] flex items-center gap-3 hover:scale-105 transition-all cursor-pointer animate-bounce"
+              >
+                <Crown className="w-4 h-4 fill-[#181009]" />
+                <span>Enter Grand Finale • The Return to Ayodhya</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+          )}
+
+          {/* POPUP 2: AFTER 3D AYODHYA WORLD ENDS (S6) -> LAUNCHES ENDING SECTION */}
+          {showEndingPopup && (
+            <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+              <div className="relative w-full max-w-xl rounded-3xl bg-gradient-to-b from-[#241308] via-[#160c06] to-[#0d0704] border-2 border-[#fbbf24] p-6 md:p-8 shadow-[0_0_70px_rgba(245,158,11,0.55)] text-center overflow-hidden">
+                <div
+                  className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-48 pointer-events-none opacity-45"
+                  style={{
+                    background:
+                      'radial-gradient(circle, rgba(251,191,36,0.8) 0%, transparent 70%)',
+                  }}
+                />
+
+                <button
+                  onClick={() => {
+                    setShowEndingPopup(false);
+                    setEndingPopupDismissed(true);
+                  }}
+                  title="Minimize to keep exploring Sarayu Ghats"
+                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-[#fde68a] flex items-center justify-center transition-all cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#fbbf24]/15 border border-[#fbbf24]/45 text-[#fde68a] text-[11px] font-sans font-bold tracking-[0.24em] uppercase mb-4">
+                  <Crown className="w-3.5 h-3.5 text-[#fbbf24]" />
+                  <span>Final Chapter • Emotional Climax</span>
+                </div>
+
+                <h2
+                  style={{ fontFamily: "'Cinzel', serif" }}
+                  className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#fffbeb] tracking-wide mb-3 drop-shadow-[0_2px_12px_rgba(251,191,36,0.4)]"
+                >
+                  The Return to Ayodhya
+                </h2>
+
+                <p className="text-sm md:text-base text-[#e6d5b8] font-serif leading-relaxed max-w-lg mx-auto mb-6">
+                  You have journeyed across the illuminated Kingdom of Ayodhya to the sacred Sarayu Ghats. Now witness the emotional climax as Lord Shri Ram, Sita Mata, Lakshmana, and Hanuman Ji return home amidst Pushpavarsha flower showers and sacred Diwali blessings.
+                </p>
+
+                <button
+                  onClick={enterEndingSection}
+                  className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-[#d97706] via-[#fbbf24] to-[#d97706] hover:from-[#f59e0b] hover:to-[#fbbf24] text-[#181009] font-sans font-extrabold text-sm tracking-[0.2em] uppercase shadow-[0_0_30px_rgba(251,191,36,0.65)] border border-[#fffbeb] flex items-center justify-center gap-3 transition-all cursor-pointer"
+                >
+                  <Sparkles className="w-5 h-5 fill-[#181009]" />
+                  <span>Enter the Grand Finale</span>
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowEndingPopup(false);
+                    setEndingPopupDismissed(true);
+                  }}
+                  className="mt-3 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/15 border border-[#fbbf24]/30 text-xs font-sans font-semibold text-[#fde68a] transition-all cursor-pointer"
+                >
+                  Stay in 3D Ayodhya World
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* =====================================================================
+          STAGE 3: ENDING SECTION — THE RETURN TO AYODHYA VIDEO & DIWALI WISHES
+      ===================================================================== */}
+      {currentStage === 'ending' && (
+        <Stage3ReturnEnding
+          onBackTo3DWorld={returnTo3DWorld}
+          onRestartFullEpic={returnToHero}
         />
       )}
     </main>

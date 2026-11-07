@@ -814,6 +814,7 @@ function AyodhyaScene({ isNight, scrollProgressRef, dragOffsetRef, onSelectHotsp
 export default function Stage2AyodhyaWorld({
   initialMode = 'auto',
   onBackToHero,
+  onEnterEnding,
 }) {
   const sectionRef = useRef(null);
   const scrollProgressRef = useRef(0);
@@ -1088,6 +1089,15 @@ export default function Stage2AyodhyaWorld({
                 );
               })}
             </div>
+
+            {onEnterEnding && (
+              <button
+                onClick={onEnterEnding}
+                className="mt-4 pt-3 border-t border-[#fbbf24]/25 w-full text-left text-[11px] font-serif italic text-[#fde68a]/90 hover:text-[#fffbeb] transition-colors cursor-pointer"
+              >
+                (Leads to Final 2D Section: The Return to Ayodhya →)
+              </button>
+            )}
           </div>
         </aside>
 
