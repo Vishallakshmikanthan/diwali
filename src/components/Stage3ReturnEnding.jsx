@@ -25,6 +25,7 @@ export default function Stage3ReturnEnding({
   onBackTo3DWorld,
   onRestartFullEpic,
   isFullTourActive = false,
+  onToggleFullTour,
   onStageComplete,
 }) {
   const sectionRef = useRef(null);
@@ -129,6 +130,51 @@ export default function Stage3ReturnEnding({
       if (!img || !img.complete || !img.naturalWidth) return;
       const imgRatio = img.naturalWidth / img.naturalHeight;
       const winRatio = w / h;
+
+      // On mobile / portrait screens (`winRatio < 1.05`), standard full-height cover zooms in ~3.8x
+      // and crops out Lord Shri Ram (who stands at x ≈ 18%–41% while Sita is at x ≈ 41%–60%).
+      // We render a full-screen ambient backdrop of the frame + frame the main video at 1.65x width
+      // anchored at `focusX = 0.37` so BOTH Lord Shri Ram and Sita Mata are 100% visible on phones!
+      if (winRatio < 1.05) {
+        const bgH = h * scaleMult;
+        const bgW = bgH * imgRatio;
+        const bgX = x + w * 0.5 - bgW * 0.38;
+        const bgY = y + (h - bgH) / 2 + offsetY;
+
+        ctx.save();
+        ctx.globalAlpha *= 0.28;
+        ctx.drawImage(img, bgX, bgY, bgW, bgH);
+        ctx.restore();
+
+        const drawW = Math.min(h * imgRatio, w * 1.66) * scaleMult;
+        const drawH = drawW / imgRatio;
+        const focusX = 0.37; // Centers directly on Lord Shri Ram + Sita Mata together
+        const unclampedX = x + w * 0.5 - drawW * focusX;
+        const drawX = Math.min(x, Math.max(x + w - drawW, unclampedX));
+        const drawY = y + (h - drawH) * 0.46 + offsetY;
+
+        ctx.drawImage(img, drawX, drawY, drawW, drawH);
+
+        // Soft top & bottom atmospheric vignette blend so the portrait frame transitions seamlessly
+        const topBlend = ctx.createLinearGradient(0, drawY - 2, 0, drawY + 42);
+        topBlend.addColorStop(0, 'rgba(9, 4, 4, 0.92)');
+        topBlend.addColorStop(1, 'rgba(9, 4, 4, 0)');
+        ctx.fillStyle = topBlend;
+        ctx.fillRect(0, Math.max(0, drawY - 4), w, 46);
+
+        const botBlend = ctx.createLinearGradient(
+          0,
+          drawY + drawH - 42,
+          0,
+          drawY + drawH + 2
+        );
+        botBlend.addColorStop(0, 'rgba(9, 4, 4, 0)');
+        botBlend.addColorStop(1, 'rgba(9, 4, 4, 0.92)');
+        ctx.fillStyle = botBlend;
+        ctx.fillRect(0, drawY + drawH - 42, w, 46);
+        return;
+      }
+
       let drawW, drawH;
       if (winRatio > imgRatio) {
         drawW = w * scaleMult;
@@ -297,6 +343,10 @@ export default function Stage3ReturnEnding({
   //    0% -> 72%: Video scrubs frame-by-frame with multi-speed foreground edge parallax
   //    72% -> 100%: Smooth fade-in and scale-up of Movanze-style Golden Diwali Wishes & Tamil Blessing
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    targetProgressRef.current = 0;
+    smoothProgressRef.current = 0;
+
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -466,8 +516,13 @@ export default function Stage3ReturnEnding({
   };
 
   useEffect(() => {
+    let startTimer;
     if (isFullTourActive && !autoPlayingRef.current) {
-      startAutoPlayLoop(true);
+      startTimer = setTimeout(() => {
+        if (isFullTourActive && !autoPlayingRef.current) {
+          startAutoPlayLoop(true);
+        }
+      }, 350);
     } else if (!isFullTourActive && autoPlayingRef.current) {
       autoPlayingRef.current = false;
       setIsAutoPlaying(false);
@@ -475,6 +530,9 @@ export default function Stage3ReturnEnding({
         audioRef.current.pause();
       }
     }
+    return () => {
+      if (startTimer) clearTimeout(startTimer);
+    };
   }, [isFullTourActive]);
 
   const replayEndingVideo = () => {
@@ -595,43 +653,69 @@ export default function Stage3ReturnEnding({
 
         {/* =====================================================================
             TOP LUXURY NAVIGATION & PLAYBACK CONTROLS BAR
+            (Responsive & non-overlapping on Mobile & Desktop)
         ===================================================================== */}
-        <header className="absolute top-0 inset-x-0 z-40 px-4 md:px-10 py-5 flex flex-wrap items-center justify-between gap-3 pointer-events-none">
-          <div className="flex items-center gap-2.5 pointer-events-auto">
+        <header className="absolute top-0 inset-x-0 z-40 px-3 sm:px-6 md:px-10 py-3.5 sm:py-5 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 pointer-events-auto">
             {onBackTo3DWorld && (
               <button
                 onClick={onBackTo3DWorld}
-                className="px-3.5 py-2 rounded-full bg-black/50 hover:bg-[#fbbf24] text-[#fffdf9] hover:text-[#181009] border border-[#fde68a]/35 backdrop-blur-md text-[11px] tracking-[0.18em] uppercase font-sans font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full bg-black/55 hover:bg-[#fbbf24] text-[#fffdf9] hover:text-[#181009] border border-[#fde68a]/35 backdrop-blur-md text-[10px] sm:text-[11px] tracking-[0.14em] sm:tracking-[0.18em] uppercase font-sans font-semibold flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer whitespace-nowrap"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
+                <ArrowLeft className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                 <span>3D Ayodhya</span>
               </button>
             )}
 
-            <div className="px-3.5 py-2 rounded-full bg-black/45 border border-[#fde68a]/25 backdrop-blur-md flex items-center gap-2.5">
+            <div className="hidden lg:flex px-3.5 py-2 rounded-full bg-black/45 border border-[#fde68a]/25 backdrop-blur-md items-center gap-2.5">
               <span className="w-2 h-2 rounded-full bg-[#fde68a] shadow-[0_0_10px_#fde68a]" />
               <span
                 style={{ fontFamily: "'Cinzel', serif" }}
-                className="text-[11px] tracking-[0.26em] uppercase text-[#fffdf9]/95 font-semibold"
+                className="text-[11px] tracking-[0.26em] uppercase text-[#fffdf9]/95 font-semibold whitespace-nowrap"
               >
                 FINALE • THE RETURN TO AYODHYA
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 pointer-events-auto">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 pointer-events-auto">
+            {onToggleFullTour && (
+              <button
+                onClick={onToggleFullTour}
+                className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full border backdrop-blur-md text-[10px] sm:text-[11px] font-sans font-extrabold tracking-[0.14em] sm:tracking-[0.2em] uppercase flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shadow-[0_0_20px_rgba(251,191,36,0.4)] whitespace-nowrap ${
+                  isFullTourActive
+                    ? 'bg-[#fbbf24] text-[#181009] border-[#fffbeb]'
+                    : 'bg-[#181009]/85 hover:bg-[#fbbf24] text-[#fde68a] hover:text-[#181009] border-[#fbbf24]/60'
+                }`}
+              >
+                {isFullTourActive ? (
+                  <>
+                    <Pause className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current shrink-0" />
+                    <span className="sm:hidden">Pause Tour</span>
+                    <span className="hidden sm:inline">Pause Full Tour</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current shrink-0" />
+                    <span className="sm:hidden">Full Tour</span>
+                    <span className="hidden sm:inline">Full Auto-Play Tour</span>
+                  </>
+                )}
+              </button>
+            )}
+
             <button
               onClick={triggerAutoPlay}
-              className="px-4 py-2 rounded-full bg-black/45 hover:bg-black/70 border border-[#fffdf9]/25 backdrop-blur-md text-[11px] tracking-[0.2em] uppercase text-[#fffdf9] flex items-center gap-2 transition-all cursor-pointer"
+              className="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-black/50 hover:bg-black/75 border border-[#fffdf9]/25 backdrop-blur-md text-[10px] sm:text-[11px] tracking-[0.14em] sm:tracking-[0.2em] uppercase text-[#fffdf9] flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer whitespace-nowrap"
             >
               {isAutoPlaying ? (
                 <>
-                  <Pause className="w-3 h-3 fill-[#fde68a] text-[#fde68a]" />
+                  <Pause className="w-3 h-3 fill-[#fde68a] text-[#fde68a] shrink-0" />
                   <span>Pause</span>
                 </>
               ) : (
                 <>
-                  <Play className="w-3 h-3 fill-[#fde68a] text-[#fde68a]" />
+                  <Play className="w-3 h-3 fill-[#fde68a] text-[#fde68a] shrink-0" />
                   <span>Auto-Play</span>
                 </>
               )}
@@ -639,17 +723,17 @@ export default function Stage3ReturnEnding({
 
             <button
               onClick={toggleSound}
-              className="px-4 py-2 rounded-full bg-black/45 hover:bg-black/70 border border-[#fffdf9]/25 backdrop-blur-md text-[11px] tracking-[0.2em] uppercase text-[#fffdf9] flex items-center gap-2 transition-all cursor-pointer"
+              className="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-black/50 hover:bg-black/75 border border-[#fffdf9]/25 backdrop-blur-md text-[10px] sm:text-[11px] tracking-[0.14em] sm:tracking-[0.2em] uppercase text-[#fffdf9] flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer whitespace-nowrap"
             >
               {soundEnabled ? (
                 <>
-                  <Volume2 className="w-3.5 h-3.5 text-[#fde68a]" />
-                  <span className="hidden sm:inline">Sound On</span>
+                  <Volume2 className="w-3.5 h-3.5 text-[#fde68a] shrink-0" />
+                  <span className="hidden md:inline">Sound On</span>
                 </>
               ) : (
                 <>
-                  <VolumeX className="w-3.5 h-3.5 text-[#fffdf9]/60" />
-                  <span className="hidden sm:inline">Sound Off</span>
+                  <VolumeX className="w-3.5 h-3.5 text-[#fffdf9]/60 shrink-0" />
+                  <span className="hidden md:inline">Sound Off</span>
                 </>
               )}
             </button>
