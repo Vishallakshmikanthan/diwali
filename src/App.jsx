@@ -72,15 +72,21 @@ export default function App() {
     setEndingPopupDismissed(false);
     setShowEndingPopup(false);
     if (!keepTour) setIsFullTourActive(false);
-    window.scrollTo({ top: 0, behavior: 'instant' });
     setCurrentStage('world3d');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    });
   };
 
   const enterEndingSection = (keepTour = false) => {
     setShowEndingPopup(false);
     if (!keepTour) setIsFullTourActive(false);
-    window.scrollTo({ top: 0, behavior: 'instant' });
     setCurrentStage('ending');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    });
   };
 
   const returnToHero = () => {
@@ -126,39 +132,13 @@ export default function App() {
   return (
     <main className="relative min-h-screen bg-[#090404] text-[#f7efe2]">
       {/* =====================================================================
-          GLOBAL FULL AUTO-PLAY TOUR BUTTON (TOP CENTER)
-          Plays seamlessly through Stage 1 -> Stage 2 (3D Ayodhya) -> Stage 3 (Finale)
-      ===================================================================== */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-        <button
-          onClick={toggleFullAutoTour}
-          className={`pointer-events-auto px-4 py-2 rounded-full border backdrop-blur-md text-[11px] font-sans font-extrabold tracking-[0.2em] uppercase flex items-center gap-2 transition-all cursor-pointer shadow-[0_0_24px_rgba(251,191,36,0.45)] ${
-            isFullTourActive
-              ? 'bg-[#fbbf24] text-[#181009] border-[#fffbeb]'
-              : 'bg-[#181009]/85 hover:bg-[#fbbf24] text-[#fde68a] hover:text-[#181009] border-[#fbbf24]/60'
-          }`}
-        >
-          {isFullTourActive ? (
-            <>
-              <Pause className="w-3.5 h-3.5 fill-current" />
-              <span>Pause Full Auto-Tour</span>
-            </>
-          ) : (
-            <>
-              <Play className="w-3.5 h-3.5 fill-current" />
-              <span>Full Auto-Play Tour</span>
-            </>
-          )}
-        </button>
-      </div>
-
-      {/* =====================================================================
           STAGE 1: HERO BATTLE & HAPPY DIWALI REVEAL
       ===================================================================== */}
       {currentStage === 'hero' && (
         <>
           <Stage1HeroBattle
             isFullTourActive={isFullTourActive}
+            onToggleFullTour={toggleFullAutoTour}
             onStageComplete={() => enterDiwaliCelebrations('auto', true)}
           />
 
@@ -279,6 +259,7 @@ export default function App() {
             onBackToHero={returnToHero}
             onEnterEnding={() => enterEndingSection(false)}
             isFullTourActive={isFullTourActive}
+            onToggleFullTour={toggleFullAutoTour}
             onStageComplete={() => enterEndingSection(true)}
           />
 
@@ -367,6 +348,7 @@ export default function App() {
           onBackTo3DWorld={returnTo3DWorld}
           onRestartFullEpic={returnToHero}
           isFullTourActive={isFullTourActive}
+          onToggleFullTour={toggleFullAutoTour}
           onStageComplete={() => setIsFullTourActive(false)}
         />
       )}
