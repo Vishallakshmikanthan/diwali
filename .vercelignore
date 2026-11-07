@@ -1,0 +1,12 @@
+node_modules
+dist
+.vercel
+*.log
+3d world -ref
+background-ref
+ending-section-ref
+hero-section-ref-video
+reference
+temple-deity-ref
+typography-ref
+
