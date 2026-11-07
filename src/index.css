@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+:root {
+  --font-display: 'Cinzel Decorative', 'Cinzel', serif;
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --font-hindi: 'Rozha One', serif;
+
+  --ink-black: #181009;
+  --sky-indigo: #0d1b2a;
+  --sky-teal: #244a5e;
+  --parchment-warm: #f2e2c4;
+  --swarna-gold: #ffd166;
+  --amber-glow: #f59e0b;
+  --sindoor-red: #c93b2b;
+  --ram-blue: #5294c2;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: #0b101d;
+  color: #f4e6c8;
+  font-family: var(--font-serif);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  background-color: #0b101d;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0b101d;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #92400e, #f59e0b, #92400e);
+  border-radius: 4px;
+  border: 1px solid #181009;
+}
+
+/* Unified Sacred Epic Style Filter for all 2D & 3D viewports */
+.epic-woodblock-grain {
+  background-image: radial-gradient(rgba(255, 209, 102, 0.06) 1px, transparent 0),
+                    radial-gradient(rgba(24, 16, 9, 0.14) 1px, transparent 0);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+.sacred-gold-text {
+  font-family: var(--font-display);
+  background: linear-gradient(
+    180deg,
+    #fffbeb 0%,
+    #fde68a 25%,
+    #f59e0b 55%,
+    #b45309 85%,
+    #fef3c7 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 0px #181009)
+          drop-shadow(0 4px 12px rgba(245, 158, 11, 0.55))
+          drop-shadow(0 0 32px rgba(251, 191, 36, 0.4));
+}
+
+.sacred-stroke-box {
+  border: 2px solid #d97706;
+  box-shadow:
+    0 0 0 2px #181009,
+    0 0 28px rgba(245, 158, 11, 0.35),
+    inset 0 0 24px rgba(245, 158, 11, 0.18);
+  background: linear-gradient(160deg, rgba(24, 16, 9, 0.92) 0%, rgba(15, 23, 42, 0.94) 100%);
+}
+
+/* Unified Ink-and-Gold Illustration Image Filter so all plates share 100% identical genre */
+.unified-epic-plate {
+  filter: contrast(1.08) saturate(1.12) sepia(0.14);
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(0.6deg); }
+}
+
+@keyframes pulseHalo {
+  0%, 100% { transform: scale(1); opacity: 0.88; }
+  50% { transform: scale(1.07); opacity: 1; }
+}
+
+@keyframes flameFlicker {
+  0%, 100% { transform: scaleY(1) scaleX(1) rotate(-1deg); }
+  25% { transform: scaleY(1.09) scaleX(0.94) rotate(1.5deg); }
+  50% { transform: scaleY(0.95) scaleX(1.05) rotate(-1.5deg); }
+  75% { transform: scaleY(1.06) scaleX(0.96) rotate(1deg); }
+}
+
+.animate-float-slow {
+  animation: floatSlow 5s ease-in-out infinite;
+}
+
+.animate-pulse-halo {
+  animation: pulseHalo 3.2s ease-in-out infinite;
+}
+
+.animate-flame {
+  animation: flameFlicker 0.45s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
