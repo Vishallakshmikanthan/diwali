@@ -1,0 +1,17 @@
+# Robots.txt for Ayodhya Diwali Web Epic
+# Website: https://diwaliweb.vercel.app/
+
+User-agent: *
+Allow: /
+Allow: /art/
+Allow: /ending/
+Allow: /hero/
+Allow: /reference/
+Allow: /assets/
+
+# Host configuration
+Host: https://diwaliweb.vercel.app
+
+# Sitemap location for Google Search Console & Bing Webmaster
+Sitemap: https://diwaliweb.vercel.app/sitemap.xml
+

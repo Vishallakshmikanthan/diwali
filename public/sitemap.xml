@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <!-- Homepage & Hero Battle Experience -->
+  <url>
+    <loc>https://diwaliweb.vercel.app/</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://diwaliweb.vercel.app/art/stage3_golden_panorama.png</image:loc>
+      <image:title>Ayodhya Diwali Golden Panorama &amp; Sacred Mandir Celebration</image:title>
+      <image:caption>Experience the divine return of Lord Shri Ram and immersive 3D Ayodhya Diwali celebrations.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://diwaliweb.vercel.app/art/temple_deity.png</image:loc>
+      <image:title>Shri Ram Lalla Temple Deity Maha Aarti</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://diwaliweb.vercel.app/art/stage1_battle_bg.png</image:loc>
+      <image:title>The Divine Arrow Epic &amp; Victory of Light over Darkness</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://diwaliweb.vercel.app/art/stage3_ayodhya_ghats.png</image:loc>
+      <image:title>Sacred Sarayu River Ghats illuminated with thousands of glowing diyas</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://diwaliweb.vercel.app/art/stage3_return_chariot.png</image:loc>
+      <image:title>Pushpaka Vimana Royal Chariot Return to Ayodhya</image:title>
+    </image:image>
+  </url>
+
+  <!-- Deep Link Section: 3D Ancient Ayodhya Celebration -->
+  <url>
+    <loc>https://diwaliweb.vercel.app/#world3d</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://diwaliweb.vercel.app/art/stage3_golden_panorama.png</image:loc>
+      <image:title>Ancient Ayodhya 3D World - Temples, Ghats, and Royal Palaces</image:title>
+    </image:image>
+  </url>
+
+  <!-- Deep Link Section: Grand Finale & Diwali Greetings Wishes -->
+  <url>
+    <loc>https://diwaliweb.vercel.app/#ending</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://diwaliweb.vercel.app/art/stage3_ayodhya_ghats.png</image:loc>
+      <image:title>Diwali Wishes and Pushpavarsha Flower Showers</image:title>
+    </image:image>
+  </url>
+</urlset>
+

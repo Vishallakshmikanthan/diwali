@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Stage1HeroBattle from './components/Stage1HeroBattle';
 import Stage2AyodhyaWorld from './components/Stage2AyodhyaWorld';
 import Stage3ReturnEnding from './components/Stage3ReturnEnding';
@@ -13,15 +13,62 @@ import {
   Crown,
   Play,
   Pause,
+  Share2,
+  Check,
 } from 'lucide-react';
+
+const getStageFromLocation = () => {
+  if (typeof window === 'undefined') return 'hero';
+  const hash = window.location.hash.replace('#', '').toLowerCase();
+  const searchParams = new URLSearchParams(window.location.search);
+  const paramStage = (searchParams.get('stage') || '').toLowerCase();
+  const target = hash || paramStage;
+
+  if (target === 'world3d' || target === 'ayodhya' || target === 'celebration' || target === '3d') {
+    return 'world3d';
+  }
+  if (target === 'ending' || target === 'finale' || target === 'wishes' || target === 'ghats') {
+    return 'ending';
+  }
+  if (target === 'hero' || target === 'battle') {
+    return 'hero';
+  }
+  return 'hero';
+};
 
 export default function App() {
   // 'hero' = Stage 1 Hero Battle
   // 'world3d' = Stage 2 Full 3D Ancient Ayodhya World
   // 'ending' = Stage 3 Return to Ayodhya Video & Golden Diwali Wishes Finale
-  const [currentStage, setCurrentStage] = useState('hero');
+  const [currentStage, setCurrentStage] = useState(() => getStageFromLocation());
   const [initialLightingMode, setInitialLightingMode] = useState('auto');
   const [isFullTourActive, setIsFullTourActive] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  // Sync hash with browser history without forced refresh
+  const syncHash = useCallback((stage) => {
+    if (typeof window === 'undefined') return;
+    const targetHash = `#${stage}`;
+    if (window.location.hash !== targetHash) {
+      window.history.replaceState(null, '', `${window.location.pathname}${targetHash}`);
+    }
+  }, []);
+
+  // Listen for browser Back/Forward navigation or manual hash change
+  useEffect(() => {
+    const handleHashChange = () => {
+      const nextStage = getStageFromLocation();
+      if (nextStage !== currentStage) {
+        setCurrentStage(nextStage);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handleHashChange);
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('popstate', handleHashChange);
+    };
+  }, [currentStage]);
 
   // Stage 1 -> Stage 2 Popup state
   const [showCelebrationPopup, setShowCelebrationPopup] = useState(false);
@@ -73,6 +120,7 @@ export default function App() {
     setShowEndingPopup(false);
     if (!keepTour) setIsFullTourActive(false);
     setCurrentStage('world3d');
+    syncHash('world3d');
     window.scrollTo({ top: 0, behavior: 'instant' });
     requestAnimationFrame(() => {
       window.scrollTo({ top: 0, behavior: 'instant' });
@@ -83,6 +131,7 @@ export default function App() {
     setShowEndingPopup(false);
     if (!keepTour) setIsFullTourActive(false);
     setCurrentStage('ending');
+    syncHash('ending');
     window.scrollTo({ top: 0, behavior: 'instant' });
     requestAnimationFrame(() => {
       window.scrollTo({ top: 0, behavior: 'instant' });
@@ -92,6 +141,7 @@ export default function App() {
   const returnToHero = () => {
     setIsFullTourActive(false);
     setCurrentStage('hero');
+    syncHash('hero');
     setPopupDismissed(false);
     setShowCelebrationPopup(false);
     setTimeout(() => {
@@ -102,11 +152,36 @@ export default function App() {
   const returnTo3DWorld = () => {
     setIsFullTourActive(false);
     setCurrentStage('world3d');
+    syncHash('world3d');
     setEndingPopupDismissed(false);
     setShowEndingPopup(false);
     setTimeout(() => {
       window.scrollTo({ top: 0, behavior: 'instant' });
     }, 20);
+  };
+
+  const handleShareLink = async () => {
+    const stageHash = currentStage === 'hero' ? '' : `#${currentStage}`;
+    const url = `${window.location.origin}/${stageHash}`;
+    const title = 'Ayodhya Diwali 3D Celebration Experience';
+    const text = 'Experience the epic 3D Ayodhya Diwali celebrations and the victory of light over darkness!';
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url });
+        return;
+      } catch (err) {
+        // Fallback to clipboard if share dialog was cancelled or unsupported
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2400);
+    } catch {
+      // Quiet fallback
+    }
   };
 
   const toggleFullAutoTour = () => {
@@ -131,6 +206,26 @@ export default function App() {
 
   return (
     <main className="relative min-h-screen bg-[#090404] text-[#f7efe2]">
+      {/* FLOATING DEEP-LINK SHARE BUTTON */}
+      <div className="fixed top-4 left-4 z-40">
+        <button
+          onClick={handleShareLink}
+          title="Share or copy deep link to current chapter"
+          className="group px-3.5 py-1.5 rounded-full bg-black/65 hover:bg-black/85 backdrop-blur-md border border-[#fbbf24]/40 hover:border-[#fbbf24] text-[#fde68a] text-xs font-sans font-medium flex items-center gap-1.5 shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:shadow-[0_0_20px_rgba(245,158,11,0.45)] transition-all cursor-pointer"
+        >
+          {copiedLink ? (
+            <>
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-emerald-300">Link Copied!</span>
+            </>
+          ) : (
+            <>
+              <Share2 className="w-3.5 h-3.5 text-[#fbbf24] group-hover:scale-110 transition-transform" />
+              <span>Share Chapter</span>
+            </>
+          )}
+        </button>
+      </div>
       {/* =====================================================================
           STAGE 1: HERO BATTLE & HAPPY DIWALI REVEAL
       ===================================================================== */}
